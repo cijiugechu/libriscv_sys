@@ -10,3 +10,4 @@ libriscv_sys = { path = "../.." }
 [features]
 default = []
 bindgen = ["libriscv_sys/bindgen"]
+binary-translation = ["libriscv_sys/binary-translation"]

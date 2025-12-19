@@ -19,6 +19,7 @@ include = [
 [features]
 default = []
 bindgen = ["dep:bindgen"]
+binary-translation = []
 
 [build-dependencies]
 cc = "1"

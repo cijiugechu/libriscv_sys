@@ -31,9 +31,17 @@ fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let libriscv_dir = manifest_dir.join("libriscv-c");
     let lib_dir = libriscv_dir.join("lib");
+    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let binary_translation = env::var("CARGO_FEATURE_BINARY_TRANSLATION").is_ok();
 
     // Generate libriscv_settings.h
-    let settings_h = r#"#ifndef LIBRISCV_SETTINGS_H
+    let binary_translation_define = if binary_translation {
+        "#define RISCV_BINARY_TRANSLATION"
+    } else {
+        "/* #undef RISCV_BINARY_TRANSLATION */"
+    };
+    let settings_h = format!(
+        r#"#ifndef LIBRISCV_SETTINGS_H
 #define LIBRISCV_SETTINGS_H
 
 /* libriscv_sys configuration */
@@ -48,7 +56,7 @@ fn main() {
 /* #undef RISCV_EXPERIMENTAL */
 #define RISCV_MEMORY_TRAPS
 /* #undef RISCV_MULTIPROCESS */
-/* #undef RISCV_BINARY_TRANSLATION */
+{binary_translation_define}
 #define RISCV_FLAT_RW_ARENA
 /* #undef RISCV_ENCOMPASSING_ARENA */
 #define RISCV_THREADED
@@ -60,7 +68,8 @@ fn main() {
 #define RISCV_VERSION_MINOR 11
 
 #endif /* LIBRISCV_SETTINGS_H */
-"#;
+"#,
+    );
     fs::write(out_dir.join("libriscv_settings.h"), settings_h)
         .expect("Failed to write libriscv_settings.h");
 
@@ -99,6 +108,22 @@ fn main() {
         sources.push("lib/libriscv/win32/system_calls.cpp");
     } else {
         sources.push("lib/libriscv/linux/system_calls.cpp");
+    }
+
+    if binary_translation {
+        sources.extend([
+            "lib/libriscv/tr_api.cpp",
+            "lib/libriscv/tr_emit.cpp",
+            "lib/libriscv/tr_translate.cpp",
+        ]);
+        if target_os == "windows" && target_env == "msvc" {
+            sources.push("lib/libriscv/win32/tr_msvc.cpp");
+        } else {
+            sources.push("lib/libriscv/tr_compiler.cpp");
+        }
+        if target_os == "windows" {
+            sources.push("lib/libriscv/win32/dlfcn.cpp");
+        }
     }
 
     // Create a wrapper for libriscv.cpp that handles the stdout macro conflict on macOS
@@ -164,9 +189,13 @@ fn main() {
         println!("cargo:rustc-link-lib=wsock32");
         println!("cargo:rustc-link-lib=ws2_32");
     }
+    if binary_translation
+        && (target_os == "linux" || target_os == "freebsd" || target_os == "android")
+    {
+        println!("cargo:rustc-link-lib=dl");
+    }
 
     // Link C++ standard library
-    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
     if target_os == "macos" {
         println!("cargo:rustc-link-lib=c++");
     } else if target_os == "linux" || target_os == "freebsd" {
