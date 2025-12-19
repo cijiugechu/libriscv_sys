@@ -1,0 +1,15 @@
+[package]
+name = "libriscv_sys"
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+description = "FFI bindings to libriscv, a fast RISC-V sandbox emulator"
+repository = "https://github.com/libriscv/libriscv"
+links = "riscv"
+build = "build.rs"
+
+[build-dependencies]
+cc = "1"
+bindgen = "0.72"
+
+[dependencies]
