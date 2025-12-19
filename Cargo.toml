@@ -16,7 +16,9 @@ include = [
     "build.rs",
     "src/**",
     "wrapper.h",
-    "libriscv-c/**",
+    "libriscv-c/LICENSE",
+    "libriscv-c/c/**",
+    "libriscv-c/lib/**",
 ]
 
 [features]
