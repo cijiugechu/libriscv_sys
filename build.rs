@@ -1,6 +1,30 @@
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+#[cfg(feature = "bindgen")]
+fn generate_bindings(lib_dir: &Path, out_dir: &Path, libriscv_dir: &Path) {
+    let bindings = bindgen::Builder::default()
+        .header("wrapper.h")
+        .clang_arg(format!("-I{}", lib_dir.display()))
+        .clang_arg(format!("-I{}", out_dir.display()))
+        .clang_arg(format!("-I{}", libriscv_dir.join("c").display()))
+        .allowlist_function("libriscv_.*")
+        .allowlist_type("RISCV.*")
+        .allowlist_type("riscv_.*")
+        .allowlist_var("RISCV_.*")
+        .generate()
+        .expect("Unable to generate bindings");
+
+    bindings
+        .write_to_file(out_dir.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+}
+
+#[cfg(not(feature = "bindgen"))]
+fn generate_bindings(_lib_dir: &Path, _out_dir: &Path, _libriscv_dir: &Path) {
+    println!("cargo:rerun-if-changed=src/bindings.rs");
+}
 
 fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -151,22 +175,7 @@ fn main() {
         println!("cargo:rustc-link-lib=stdc++");
     }
 
-    // Generate bindings with bindgen
-    let bindings = bindgen::Builder::default()
-        .header("wrapper.h")
-        .clang_arg(format!("-I{}", lib_dir.display()))
-        .clang_arg(format!("-I{}", out_dir.display()))
-        .clang_arg(format!("-I{}", libriscv_dir.join("c").display()))
-        .allowlist_function("libriscv_.*")
-        .allowlist_type("RISCV.*")
-        .allowlist_type("riscv_.*")
-        .allowlist_var("RISCV_.*")
-        .generate()
-        .expect("Unable to generate bindings");
-
-    bindings
-        .write_to_file(out_dir.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    generate_bindings(&lib_dir, &out_dir, &libriscv_dir);
 
     // Rerun if sources change
     println!("cargo:rerun-if-changed=wrapper.h");
@@ -175,4 +184,3 @@ fn main() {
         println!("cargo:rerun-if-changed=libriscv-c/{}", source);
     }
 }
-

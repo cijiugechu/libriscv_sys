@@ -125,6 +125,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "libriscv_sys_smoke"
+version = "0.1.0"
+dependencies = [
+ "libriscv_sys",
+]
+
+[[package]]
 name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"

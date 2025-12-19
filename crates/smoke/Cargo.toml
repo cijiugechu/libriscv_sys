@@ -1,0 +1,12 @@
+[package]
+name = "libriscv_sys_smoke"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+libriscv_sys = { path = "../.." }
+
+[features]
+default = []
+bindgen = ["libriscv_sys/bindgen"]
